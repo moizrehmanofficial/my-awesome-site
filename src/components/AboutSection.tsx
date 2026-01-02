@@ -28,7 +28,7 @@ const highlights = [
 
 const AboutSection = () => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
     <section id="about" className="py-24 relative">

@@ -31,7 +31,7 @@ const skills = {
 
 const SkillBar = ({ name, level, delay }: { name: string; level: number; delay: number }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
     <div ref={ref} className="mb-4">
@@ -53,7 +53,7 @@ const SkillBar = ({ name, level, delay }: { name: string; level: number; delay: 
 
 const SkillsSection = () => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
     <section id="skills" className="py-24 bg-card/30">

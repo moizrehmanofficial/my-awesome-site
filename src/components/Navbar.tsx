@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import Logo from "./Logo";
 
 const navLinks = [
   { name: "Home", href: "#home" },
@@ -34,12 +33,13 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <a href="#home" className="flex items-center gap-2">
-            <Logo size="md" />
-            <span className="text-lg font-bold font-mono text-gradient hidden sm:block">
-              Moiz Rehman
-            </span>
-          </a>
+          <motion.a
+            href="#home"
+            className="text-2xl font-bold font-mono text-gradient"
+            whileHover={{ scale: 1.05 }}
+          >
+            {"<MR />"}
+          </motion.a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">

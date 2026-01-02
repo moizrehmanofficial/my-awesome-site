@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Heart, Github, Linkedin, Mail } from "lucide-react";
-import Logo from "./Logo";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -10,13 +9,13 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo & Copyright */}
-          <div className="flex flex-col items-center md:items-start gap-3">
-            <div className="flex items-center gap-2">
-              <Logo size="sm" />
-              <span className="text-lg font-bold font-mono text-gradient">
-                Moiz Rehman
-              </span>
-            </div>
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <motion.span
+              className="text-xl font-bold font-mono text-gradient"
+              whileHover={{ scale: 1.05 }}
+            >
+              {"<MR />"}
+            </motion.span>
             <p className="text-muted-foreground text-sm flex items-center gap-1">
               Made with <Heart className="text-red-500" size={14} /> by Moiz Rehman © {currentYear}
             </p>
