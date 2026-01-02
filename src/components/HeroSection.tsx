@@ -159,21 +159,27 @@ const HeroSection = () => {
           </motion.div>
         </div>
 
-        {/* Scroll indicator */}
+        {/* Scroll indicator - bottom right */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          className="absolute bottom-10 right-10"
         >
           <motion.a
             href="#about"
-            className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
-            animate={{ y: [0, 10, 0] }}
+            className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
+            animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <span className="text-sm font-mono">scroll down</span>
-            <ArrowDown size={20} />
+            <span className="text-sm font-mono">scroll</span>
+            <div className="w-6 h-10 border-2 border-current rounded-full flex justify-center pt-2">
+              <motion.div
+                className="w-1.5 h-1.5 bg-primary rounded-full"
+                animate={{ y: [0, 12, 0], opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            </div>
           </motion.a>
         </motion.div>
       </div>
