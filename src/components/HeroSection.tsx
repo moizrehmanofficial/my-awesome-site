@@ -167,7 +167,7 @@ const HeroSection = () => {
           className="absolute bottom-10 right-10"
         >
           <motion.a
-            href="#about"
+            href="#contact"
             className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.5, repeat: Infinity }}
