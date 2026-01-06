@@ -182,53 +182,7 @@ const ContactSection = () => {
                   )}
                 </motion.div>
               ))}
-                </div>
-
-                {/* File Attachment */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Attach File <span className="text-muted-foreground">(Optional - PDFs & Word files only)</span>
-                  </label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                  
-                  {!attachedFile ? (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={`w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
-                        isDragging 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50 bg-secondary/30"
-                      }`}
-                    >
-                      <Upload className={`${isDragging ? "text-primary" : "text-muted-foreground"}`} size={24} />
-                      <p className="text-sm text-muted-foreground text-center">
-                        <span className="font-medium text-foreground">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX only</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg">
-                      <FileText className="text-primary" size={20} />
-                      <span className="flex-1 text-sm truncate">{attachedFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={removeFile}
-                        className="p-1 hover:bg-destructive/20 rounded transition-colors"
-                      >
-                        <X className="text-destructive" size={18} />
-                      </button>
-                    </div>
-                  )}
-                </div>
+            </div>
           </motion.div>
 
           {/* Contact Form */}
@@ -284,6 +238,52 @@ const ContactSection = () => {
                     className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
                     placeholder="Hi Moiz, I'd like to discuss a project..."
                   />
+                </div>
+
+                {/* File Attachment */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Attach File <span className="text-muted-foreground">(Optional - PDFs & Word files only)</span>
+                  </label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  
+                  {!attachedFile ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
+                        isDragging 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50 bg-secondary/30"
+                      }`}
+                    >
+                      <Upload className={`${isDragging ? "text-primary" : "text-muted-foreground"}`} size={24} />
+                      <p className="text-sm text-muted-foreground text-center">
+                        <span className="font-medium text-foreground">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX only</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg">
+                      <FileText className="text-primary" size={20} />
+                      <span className="flex-1 text-sm truncate">{attachedFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={removeFile}
+                        className="p-1 hover:bg-destructive/20 rounded transition-colors"
+                      >
+                        <X className="text-destructive" size={18} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <motion.button
