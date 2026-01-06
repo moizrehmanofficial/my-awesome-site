@@ -9,7 +9,7 @@ const contactInfo = [
     icon: Mail,
     label: "Email",
     value: "moizrehmanofficial@gmail.com",
-    href: "mailto:moizrehmanofficial@gmail.com",
+    href: "https://mail.google.com/mail/?view=cm&to=moizrehmanofficial@gmail.com",
   },
   {
     icon: MapPin,
