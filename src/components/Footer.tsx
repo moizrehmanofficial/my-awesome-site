@@ -18,7 +18,8 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-muted-foreground text-sm flex items-center gap-1">
-              Made with <Heart className="text-red-500" size={14} /> by Moiz Rehman © {currentYear}
+               Made by Moiz Rehman © {currentYear}
+              {/* Made with <Heart className="text-red-500" size={14} /> by Moiz Rehman © {currentYear} */}
             </p>
           </div>
 
