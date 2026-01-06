@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Mail, MapPin, Linkedin, Github, Send, ExternalLink, Upload, X, FileText, Loader2 } from "lucide-react";
+import { Mail, MapPin, Linkedin, Github, Send, ExternalLink, Upload, X, FileText, Loader2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+
 const contactInfo = [
   {
     icon: Mail,
@@ -37,6 +39,8 @@ const ACCEPTED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ];
 
+type FormStep = "form" | "otp";
+
 const ContactSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { margin: "-100px" });
@@ -50,6 +54,9 @@ const ContactSection = () => {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<FormStep>("form");
+  const [otpValue, setOtpValue] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (file: File | null) => {
@@ -95,11 +102,71 @@ const ContactSection = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: {
+          action: "send",
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          fileName: attachedFile?.name,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Verification code sent!",
+        description: "Check your email for the 6-digit code.",
+      });
+
+      setStep("otp");
+    } catch (error: any) {
+      toast({
+        title: "Failed to send code",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyAndSend = async () => {
+    if (otpValue.length !== 6) {
+      toast({
+        title: "Invalid code",
+        description: "Please enter the complete 6-digit code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    
+    try {
+      // Verify OTP
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("send-otp", {
+        body: {
+          action: "verify",
+          email: formData.email,
+          code: otpValue,
+        },
+      });
+
+      if (verifyError) throw verifyError;
+      if (verifyData?.error) throw new Error(verifyData.error);
+
+      if (!verifyData?.verified) {
+        throw new Error("Verification failed");
+      }
+
+      // Now send the actual contact email
       const { data, error } = await supabase.functions.invoke("send-contact-email", {
         body: {
           name: formData.name,
@@ -119,12 +186,49 @@ const ContactSection = () => {
       // Reset form
       setFormData({ name: "", email: "", message: "" });
       setAttachedFile(null);
+      setStep("form");
+      setOtpValue("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error: any) {
-      console.error("Error sending message:", error);
       toast({
-        title: "Failed to send",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Verification failed",
+        description: error.message || "Invalid code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleBackToForm = () => {
+    setStep("form");
+    setOtpValue("");
+  };
+
+  const handleResendOTP = async () => {
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-otp", {
+        body: {
+          action: "send",
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          fileName: attachedFile?.name,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Code resent!",
+        description: "Check your email for the new 6-digit code.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to resend",
+        description: error.message || "Something went wrong.",
         variant: "destructive",
       });
     } finally {
@@ -211,122 +315,194 @@ const ContactSection = () => {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <form onSubmit={handleSubmit} className="card-gradient border-glow rounded-2xl p-8">
-              <h3 className="text-2xl font-bold mb-6">Send a Message</h3>
-              
-              <div className="space-y-5">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium mb-2">
-                    Your Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                    placeholder="John Doe"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Your Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                    placeholder="john@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    required
-                    rows={5}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
-                    placeholder="Hi Moiz, I'd like to discuss a project..."
-                  />
-                </div>
-
-                {/* File Attachment */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Attach File <span className="text-muted-foreground">(Optional - PDFs & Word files only)</span>
-                  </label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                    className="hidden"
-                  />
+            <div className="card-gradient border-glow rounded-2xl p-8">
+              {step === "form" ? (
+                <form onSubmit={handleSendOTP}>
+                  <h3 className="text-2xl font-bold mb-6">Send a Message</h3>
                   
-                  {!attachedFile ? (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={`w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
-                        isDragging 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50 bg-secondary/30"
-                      }`}
-                    >
-                      <Upload className={`${isDragging ? "text-primary" : "text-muted-foreground"}`} size={24} />
-                      <p className="text-sm text-muted-foreground text-center">
-                        <span className="font-medium text-foreground">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX only</p>
+                  <div className="space-y-5">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium mb-2">
+                        Your Name
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        placeholder="John Doe"
+                      />
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg">
-                      <FileText className="text-primary" size={20} />
-                      <span className="flex-1 text-sm truncate">{attachedFile.name}</span>
-                      <button
-                        type="button"
-                        onClick={removeFile}
-                        className="p-1 hover:bg-destructive/20 rounded transition-colors"
-                      >
-                        <X className="text-destructive" size={18} />
-                      </button>
-                    </div>
-                  )}
-                </div>
 
-                <motion.button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-                  whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={18} />
-                      Send Message
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </form>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium mb-2">
+                        Your Email
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="message" className="block text-sm font-medium mb-2">
+                        Message
+                      </label>
+                      <textarea
+                        id="message"
+                        required
+                        rows={5}
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
+                        placeholder="Hi Moiz, I'd like to discuss a project..."
+                      />
+                    </div>
+
+                    {/* File Attachment */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Attach File <span className="text-muted-foreground">(Optional - PDFs & Word files only)</span>
+                      </label>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      
+                      {!attachedFile ? (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          className={`w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
+                            isDragging 
+                              ? "border-primary bg-primary/10" 
+                              : "border-border hover:border-primary/50 bg-secondary/30"
+                          }`}
+                        >
+                          <Upload className={`${isDragging ? "text-primary" : "text-muted-foreground"}`} size={24} />
+                          <p className="text-sm text-muted-foreground text-center">
+                            <span className="font-medium text-foreground">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-muted-foreground">PDF, DOC, DOCX only</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg">
+                          <FileText className="text-primary" size={20} />
+                          <span className="flex-1 text-sm truncate">{attachedFile.name}</span>
+                          <button
+                            type="button"
+                            onClick={removeFile}
+                            className="p-1 hover:bg-destructive/20 rounded transition-colors"
+                          >
+                            <X className="text-destructive" size={18} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <motion.button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                      whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Sending code...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={18} />
+                          Verify Email & Send
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                </form>
+              ) : (
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Mail className="text-primary" size={28} />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Verify Your Email</h3>
+                  <p className="text-muted-foreground mb-6">
+                    We've sent a 6-digit code to<br />
+                    <span className="font-medium text-foreground">{formData.email}</span>
+                  </p>
+
+                  <div className="flex justify-center mb-6">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpValue}
+                      onChange={(value) => setOtpValue(value)}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+
+                  <motion.button
+                    type="button"
+                    onClick={handleVerifyAndSend}
+                    disabled={isVerifying || otpValue.length !== 6}
+                    className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    whileHover={{ scale: isVerifying ? 1 : 1.02 }}
+                    whileTap={{ scale: isVerifying ? 1 : 0.98 }}
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={18} />
+                        Verify & Send Message
+                      </>
+                    )}
+                  </motion.button>
+
+                  <div className="flex items-center justify-center gap-4 text-sm">
+                    <button
+                      type="button"
+                      onClick={handleBackToForm}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ← Back to form
+                    </button>
+                    <span className="text-border">|</span>
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={isSubmitting}
+                      className="text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Sending..." : "Resend code"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </motion.div>
         </div>
       </div>
