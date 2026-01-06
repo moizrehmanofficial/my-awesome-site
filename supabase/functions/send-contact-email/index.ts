@@ -8,6 +8,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 interface ContactRequest {
   name: string;
   email: string;
@@ -45,21 +56,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending contact email from:", name, email);
 
+    // Sanitize user inputs for HTML
+    const safeName = escapeHtml(name);
+    const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
+    const safeFileName = fileName ? escapeHtml(fileName) : null;
+
     // Send notification email to site owner
     const ownerEmailResponse = await resend.emails.send({
       from: "Portfolio Contact <noreply@moizrehman.site>",
       to: ["moizrehmanofficial@gmail.com"],
       reply_to: email,
-      subject: `New Contact: ${name}`,
+      subject: `New Contact: ${safeName}`,
       html: `
         <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Name:</strong> ${safeName}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
         <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, "<br>")}</p>
-        ${fileName ? `<p><strong>Attached File:</strong> ${fileName} (User mentioned they have a file to share)</p>` : ""}
+        <p>${safeMessage}</p>
+        ${safeFileName ? `<p><strong>Attached File:</strong> ${safeFileName} (User mentioned they have a file to share)</p>` : ""}
         <hr>
-        <p><em>Reply directly to this email to respond to ${name}.</em></p>
+        <p><em>Reply directly to this email to respond to ${safeName}.</em></p>
       `,
     });
 
@@ -71,11 +87,11 @@ const handler = async (req: Request): Promise<Response> => {
       to: [email],
       subject: "Thanks for reaching out!",
       html: `
-        <h2>Hi ${name}!</h2>
+        <h2>Hi ${safeName}!</h2>
         <p>Thank you for contacting me. I've received your message and will get back to you as soon as possible.</p>
         <p><strong>Your message:</strong></p>
         <blockquote style="border-left: 3px solid #10b981; padding-left: 16px; color: #666;">
-          ${message.replace(/\n/g, "<br>")}
+          ${safeMessage}
         </blockquote>
         <p>Best regards,<br>Moiz Rehman</p>
       `,

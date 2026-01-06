@@ -22,6 +22,17 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,6 +59,21 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(
           JSON.stringify({ error: "Name and message are required" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Rate limiting: Check if OTP was sent recently (1 minute cooldown)
+      const { data: recent } = await supabase
+        .from("contact_otps")
+        .select("created_at")
+        .eq("email", email)
+        .gte("created_at", new Date(Date.now() - 60000).toISOString())
+        .maybeSingle();
+
+      if (recent) {
+        return new Response(
+          JSON.stringify({ error: "Please wait before requesting another code" }),
+          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
@@ -81,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject: "Verify your email - Contact Form",
         html: `
           <h2>Email Verification</h2>
-          <p>Hi ${name},</p>
+          <p>Hi ${escapeHtml(name)},</p>
           <p>Please use the following code to verify your email before sending your message:</p>
           <div style="text-align: center; margin: 30px 0;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; background: #f4f4f4; padding: 16px 32px; border-radius: 8px; display: inline-block;">
