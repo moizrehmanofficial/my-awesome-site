@@ -42,7 +42,7 @@ const Footer = () => {
               <Linkedin size={18} />
             </motion.a>
             <motion.a
-              href="mailto:moizrehmanofficial@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&to=moizrehmanofficial@gmail.com"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-border hover:border-primary hover:text-primary transition-all duration-300"
               whileHover={{ scale: 1.1 }}
             >
