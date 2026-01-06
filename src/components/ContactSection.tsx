@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Mail, MapPin, Linkedin, Github, Send, ExternalLink } from "lucide-react";
+import { Mail, MapPin, Linkedin, Github, Send, ExternalLink, Upload, X, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const contactInfo = [
@@ -31,6 +31,12 @@ const contactInfo = [
   },
 ];
 
+const ACCEPTED_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
+
 const ContactSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { margin: "-100px" });
@@ -41,18 +47,68 @@ const ContactSection = () => {
     email: "",
     message: "",
   });
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (file: File | null) => {
+    if (!file) return;
+    
+    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Only PDF and Word files (.pdf, .doc, .docx) are accepted.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setAttachedFile(file);
+    toast({
+      title: "File attached",
+      description: `${file.name} has been attached.`,
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFileChange(file);
+  };
+
+  const removeFile = () => {
+    setAttachedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Create mailto link with form data
     const subject = encodeURIComponent(`Portfolio Contact from ${formData.name}`);
-    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
+    const body = encodeURIComponent(
+      `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}${attachedFile ? `\n\n[Note: File "${attachedFile.name}" was attached but cannot be sent via mailto. Please request it via email reply.]` : ""}`
+    );
     window.location.href = `mailto:moizrehmanofficial@gmail.com?subject=${subject}&body=${body}`;
     
     toast({
       title: "Opening email client...",
-      description: "Your default email app will open with the message.",
+      description: attachedFile 
+        ? "Your email app will open. Please manually attach the file there."
+        : "Your default email app will open with the message.",
     });
   };
 
@@ -126,7 +182,53 @@ const ContactSection = () => {
                   )}
                 </motion.div>
               ))}
-            </div>
+                </div>
+
+                {/* File Attachment */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Attach File <span className="text-muted-foreground">(Optional - PDFs & Word files only)</span>
+                  </label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  
+                  {!attachedFile ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
+                        isDragging 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50 bg-secondary/30"
+                      }`}
+                    >
+                      <Upload className={`${isDragging ? "text-primary" : "text-muted-foreground"}`} size={24} />
+                      <p className="text-sm text-muted-foreground text-center">
+                        <span className="font-medium text-foreground">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX only</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg">
+                      <FileText className="text-primary" size={20} />
+                      <span className="flex-1 text-sm truncate">{attachedFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={removeFile}
+                        className="p-1 hover:bg-destructive/20 rounded transition-colors"
+                      >
+                        <X className="text-destructive" size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
           </motion.div>
 
           {/* Contact Form */}
