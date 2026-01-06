@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification email to site owner
     const ownerEmailResponse = await resend.emails.send({
-      from: "Portfolio Contact <onboarding@resend.dev>",
+      from: "Portfolio Contact <noreply@moizrehman.site>",
       to: ["moizrehmanofficial@gmail.com"],
       reply_to: email,
       subject: `New Contact: ${name}`,
@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to the sender
     const confirmationResponse = await resend.emails.send({
-      from: "Moiz Rehman <onboarding@resend.dev>",
+      from: "Moiz Rehman <noreply@moizrehman.site>",
       to: [email],
       subject: "Thanks for reaching out!",
       html: `
