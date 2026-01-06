@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -7,9 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// In-memory OTP store (will reset on function restart, but sufficient for verification)
-const otpStore = new Map<string, { code: string; expires: number; name: string; message: string; fileName?: string }>();
 
 interface OTPRequest {
   action: "send" | "verify";
@@ -30,6 +28,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const { action, email, name, message, fileName, code }: OTPRequest = await req.json();
 
     // Validate email
@@ -50,10 +52,25 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const otp = generateOTP();
-      const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
-      // Store OTP with form data
-      otpStore.set(email, { code: otp, expires, name, message, fileName });
+      // Delete any existing OTPs for this email
+      await supabase.from("contact_otps").delete().eq("email", email);
+
+      // Store OTP in database
+      const { error: insertError } = await supabase.from("contact_otps").insert({
+        email,
+        code: otp,
+        name,
+        message,
+        file_name: fileName || null,
+        expires_at: expiresAt,
+      });
+
+      if (insertError) {
+        console.error("Failed to store OTP:", insertError);
+        throw new Error("Failed to store OTP");
+      }
 
       console.log("Sending OTP to:", email);
 
@@ -93,7 +110,17 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      const stored = otpStore.get(email);
+      // Get OTP from database
+      const { data: stored, error: selectError } = await supabase
+        .from("contact_otps")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error("Failed to retrieve OTP:", selectError);
+        throw new Error("Failed to verify OTP");
+      }
 
       if (!stored) {
         return new Response(
@@ -102,8 +129,9 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      if (Date.now() > stored.expires) {
-        otpStore.delete(email);
+      if (new Date() > new Date(stored.expires_at)) {
+        // Delete expired OTP
+        await supabase.from("contact_otps").delete().eq("email", email);
         return new Response(
           JSON.stringify({ error: "OTP expired. Please request a new code." }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -117,9 +145,15 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // OTP verified - return stored form data
-      const { name: storedName, message: storedMessage, fileName: storedFileName } = stored;
-      otpStore.delete(email);
+      // OTP verified - get stored form data and delete OTP
+      const formData = {
+        name: stored.name,
+        email: stored.email,
+        message: stored.message,
+        fileName: stored.file_name,
+      };
+
+      await supabase.from("contact_otps").delete().eq("email", email);
 
       console.log("OTP verified for:", email);
 
@@ -127,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ 
           success: true, 
           verified: true,
-          formData: { name: storedName, email, message: storedMessage, fileName: storedFileName }
+          formData
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
