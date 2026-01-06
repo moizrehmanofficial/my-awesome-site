@@ -13,12 +13,10 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="flex items-center gap-2">
               <Logo size="sm" />
-              <span className="text-lg font-bold font-mono text-gradient">
-                Moiz Rehman
-              </span>
+              <span className="text-lg font-bold font-mono text-gradient">Moiz Rehman</span>
             </div>
             <p className="text-muted-foreground text-sm flex items-center gap-1">
-               Made by Moiz Rehman © {currentYear}
+              Made by Moiz Rehman © {currentYear}
               {/* Made with <Heart className="text-red-500" size={14} /> by Moiz Rehman © {currentYear} */}
             </p>
           </div>
@@ -44,7 +42,7 @@ const Footer = () => {
               <Linkedin size={18} />
             </motion.a>
             <motion.a
-              href="https://mail.google.com/mail/?view=cm&to=moizrehmanofficial@gmail.com"
+              href="mailto:moizrehmanofficial@gmail.com"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-border hover:border-primary hover:text-primary transition-all duration-300"
               whileHover={{ scale: 1.1 }}
             >
