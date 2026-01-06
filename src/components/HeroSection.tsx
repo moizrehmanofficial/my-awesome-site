@@ -5,9 +5,11 @@ import heroBg from "@/assets/hero-bg.jpg";
 
 const roles = [
   "MERN Stack Developer",
+  "Full Stack Developer",
+  "Frontend Developer",
   "Backend Engineer",
   "React.js Developer",
-  "Full Stack Developer",
+  "Node.js Developer",
 ];
 
 const HeroSection = () => {
@@ -34,7 +36,7 @@ const HeroSection = () => {
           }
         }
       },
-      isDeleting ? 50 : 100
+      isDeleting ? 50 : 100,
     );
 
     return () => clearTimeout(timeout);
@@ -47,17 +49,10 @@ const HeroSection = () => {
   ];
 
   return (
-    <section
-      id="home"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
-    >
+    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <img
-          src={heroBg}
-          alt="Tech background"
-          className="w-full h-full object-cover opacity-40"
-        />
+        <img src={heroBg} alt="Tech background" className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/50 to-background" />
       </div>
 
@@ -83,8 +78,7 @@ const HeroSection = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4"
           >
-            Hi, I'm{" "}
-            <span className="text-gradient glow-text">Moiz Rehman</span>
+            Hi, I'm <span className="text-gradient glow-text">Moiz Rehman</span>
           </motion.h1>
 
           {/* Typing effect */}
@@ -105,8 +99,8 @@ const HeroSection = () => {
             transition={{ delay: 0.6 }}
             className="text-muted-foreground text-lg max-w-2xl mb-8"
           >
-            Building scalable web applications with MongoDB, Express.js, React.js, and Node.js.
-            Passionate about clean code and efficient backend systems.
+            Building scalable web applications with MongoDB, Express.js, React.js, and Node.js. Passionate about clean
+            code and efficient backend systems.
           </motion.p>
 
           {/* CTA Buttons */}
